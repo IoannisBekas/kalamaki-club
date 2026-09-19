@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240">
+  <!-- Kalamaki Club mark: a wrapped pita with a skewer and a face. Monochrome — used as a CSS mask. -->
+  <defs>
+    <mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="240">
+      <g fill="#fff" stroke="#fff" stroke-linejoin="round">
+        <line x1="170" y1="12" x2="116" y2="112" stroke-width="10" stroke-linecap="round"/>
+        <rect x="143" y="23" width="32" height="32" rx="9" transform="rotate(28 159 39)"/>
+        <rect x="127" y="54" width="32" height="32" rx="9" transform="rotate(18 143 70)"/>
+        <rect x="52" y="44" width="13" height="56" rx="4" transform="rotate(-16 58 72)"/>
+        <rect x="86" y="36" width="13" height="58" rx="4" transform="rotate(-4 92 65)"/>
+        <circle cx="50" cy="108" r="21"/>
+        <circle cx="78" cy="96" r="22"/>
+        <circle cx="106" cy="94" r="21"/>
+        <circle cx="132" cy="98" r="21"/>
+        <circle cx="156" cy="108" r="18"/>
+        <path d="M28 116 Q100 136 172 116 L130 216 Q100 234 70 216 Z" stroke-width="0"/>
+      </g>
+      <g fill="none" stroke="#000" stroke-linecap="round">
+        <path d="M24 116 Q100 138 176 116" stroke-width="7"/>
+        <path d="M26 164 Q100 150 178 124" stroke-width="6"/>
+        <path d="M90 196 Q100 206 110 196" stroke-width="6"/>
+      </g>
+      <g fill="#000">
+        <ellipse cx="84" cy="182" rx="7" ry="9.5"/>
+        <ellipse cx="116" cy="182" rx="7" ry="9.5"/>
+      </g>
+    </mask>
+  </defs>
+  <rect width="200" height="240" fill="#000" mask="url(#m)"/>
+</svg>

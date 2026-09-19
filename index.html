@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Kalamaki Club — Σουβλάκι στα κάρβουνα · Πειραιάς</title>
+  <meta name="description" content="Kalamaki Club: καλαμάκια στα κάρβουνα, πίτες γύρος, μερίδες, πατάτες κομμένες στο χέρι & τζατζίκι της γιαγιάς. Delivery σε 25–35′ στον Πειραιά.">
+  <meta name="theme-color" content="#170F0B">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Kalamaki Club — Σουβλάκι στα κάρβουνα">
+  <meta property="og:description" content="Καλαμάκια στα κάρβουνα, πίτες τυλιγμένες σφιχτά & πατάτες στο χέρι. Delivery σε 25–35′.">
+  <meta property="og:image" content="assets/img/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+  <link rel="icon" type="image/png" href="assets/img/favicon.png">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+
+  <script>document.documentElement.classList.add('js');</script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400..800&family=JetBrains+Mono:wght@500;700;800&family=Noto+Serif+Display:ital,wght@1,600;1,700&family=Sofia+Sans+Extra+Condensed:wght@800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind (layout utilities). Component styles live in style.css and win over utilities. -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --color-ink: #170F0B;
+      --color-coal: #22160F;
+      --color-sun: #FFC23D;
+      --color-blue: #2457FF;
+      --color-ember: #FF5A1F;
+      --color-paper: #F7EDD8;
+      --color-green: #5FC46B;
+      --font-display: "Sofia Sans Extra Condensed", sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+    }
+  </style>
+  <link rel="stylesheet" href="assets/css/style.css?v=1">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    "name": "Kalamaki Club",
+    "image": "assets/img/og.jpg",
+    "telephone": "+30 210 000 0000",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Καραΐσκου 58",
+      "addressLocality": "Πειραιάς",
+      "addressCountry": "GR"
+    },
+    "servesCuisine": ["Greek", "Souvlaki", "Gyros", "Grill", "Street food"],
+    "priceRange": "€"
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#menu">Skip to menu</a>
+
+  <!-- ============================ PRELOADER -->
+  <div class="preloader" id="preloader" aria-hidden="true">
+    <div class="preloader-inner">
+      <div class="preloader-face"><i></i><i></i></div>
+      <div class="preloader-count" id="preCount">000</div>
+      <div class="preloader-bar"><span></span></div>
+      <div class="mono" style="font-size:.72rem;font-weight:700">Ανάβουμε τα κάρβουνα · Lighting the coals</div>
+    </div>
+  </div>
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ============================ CURSOR -->
+  <div class="cursor" aria-hidden="true">
+    <canvas class="trail-canvas" id="trail"></canvas>
+    <div class="cursor-ring" id="cursorRing"></div>
+    <div class="cursor-dot" id="cursorDot"></div>
+    <div class="cursor-label" id="cursorLabel"></div>
+  </div>
+
+  <!-- ============================ NAV -->
+  <header class="nav" id="nav">
+    <a href="#fire" class="brand" aria-label="Kalamaki Club — αρχή">
+      <span class="brand-mark"><i></i></span>
+      <span class="brand-word">Kalamaki <b>Club</b></span>
+    </a>
+    <nav class="nav-links" aria-label="Κύριο μενού">
+      <a href="#menu">Menu</a>
+      <a href="#pita">Πίτα</a>
+      <a href="#build">Build</a>
+      <a href="#find">Βρες μας</a>
+    </nav>
+    <div class="nav-right">
+      <span class="pill status" data-status><span class="status-dot"></span><span data-status-text>Open</span></span>
+      <button class="btn-icon sound-btn" id="soundBtn" type="button" aria-pressed="false" aria-label="Ήχος on/off" data-cursor="ΗΧΟΣ">
+        <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      </button>
+      <button class="cart-btn" type="button" data-open-cart aria-label="Άνοιγμα καλαθιού">
+        <i data-lucide="shopping-bag"></i>
+        <span class="cart-total" data-cart-total>0,00€</span>
+        <span class="cart-count" data-cart-count>0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- skewer progress rail -->
+  <nav class="rail" aria-label="Section progress">
+    <svg class="rail-marker" id="railMarker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-3 2-4.5 2.5-7 1 2 2 2.5 2.5 2.5 0-2-.5-3.5 0-5.5z"/></svg>
+    <ol id="railList"></ol>
+  </nav>
+
+  <main id="top">
+    <!-- ============================ HERO / THE GRILL -->
+    <section class="hero" id="fire" data-scene="Fire">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <canvas class="hero-embers" id="embers" aria-hidden="true"></canvas>
+      <div class="grid-floor" aria-hidden="true"></div>
+
+      <div class="hero-grid mx-auto w-full max-w-[1500px]">
+        <div class="hero-copy">
+          <div class="hero-meta" data-hero-in>
+            <span class="pill status" data-status><span class="status-dot"></span><span data-status-text>Open</span></span>
+            <span class="pill"><i data-lucide="map-pin" style="width:14px;height:14px"></i> Πειραιάς</span>
+            <span class="pill"><i data-lucide="flame" style="width:14px;height:14px"></i> 100% κάρβουνο</span>
+          </div>
+
+          <h1 class="hero-title">
+            <span class="sr-only">Kalamaki Club</span>
+            <span aria-hidden="true">
+              <span class="line line-1" data-split>KALAMAKI</span>
+              <span class="line line-2"><span data-split>στα κάρβουνα</span><span class="title-sticker">charcoal only</span></span>
+              <span class="line line-3" data-split>CLUB</span>
+            </span>
+          </h1>
+
+          <p class="hero-sub" data-hero-in>
+            Καλαμάκια που ψήνονται σε <strong>αληθινό κάρβουνο</strong>, πίτες τυλιγμένες σφιχτά και πατάτες κομμένες στο χέρι —
+            από τη σχάρα μας στον Πειραιά, καυτά στην πόρτα σου σε <strong>25–35′</strong>.
+          </p>
+          <div class="hero-ctas" data-hero-in>
+            <a href="#menu" class="btn btn--lg" data-magnetic data-cursor="ΜΕΝΟΥ"><i data-lucide="utensils"></i> Δες το μενού</a>
+            <button type="button" class="btn btn--blue btn--lg" data-open-cart data-magnetic data-cursor="ΠΑΜΕ!"><i data-lucide="flame"></i> Παράγγειλε τώρα</button>
+          </div>
+        </div>
+
+        <div class="hero-visual" id="heroVisual" aria-hidden="true">
+          <div class="disc" data-depth="12">
+            <svg class="disc-rivets" id="rivets" viewBox="0 0 100 100"></svg>
+            <div class="disc-glass"><div class="disc-hero" data-art='{"kind":"pita","meat":"pork"}'></div></div>
+            <div class="disc-hud"><span></span><span></span><span></span><span></span></div>
+            <span class="disc-tag">Κάρβουνα · 400°C · ready</span>
+          </div>
+          <div class="floaty f-badge" data-depth="30"><div style="position:relative">
+            <div data-badge></div>
+            <div class="badge-center">100%<small>κάρβουνο<br>charcoal</small></div>
+          </div></div>
+          <div class="floaty f-planet" data-depth="44"><div data-lemon></div></div>
+          <div class="floaty f-cup" data-depth="56"><div data-art='{"kind":"skewer","meat":"pork"}'></div></div>
+          <div class="floaty f-cakes" data-depth="36"><div data-art='{"kind":"fries"}'></div></div>
+          <span class="sparkle" data-flame="#FFC23D" style="left:44%;top:-2%;--s:34px"></span>
+          <span class="sparkle" data-sparkle="#fff" style="left:88%;top:44%;--s:22px;--d:-1s"></span>
+          <span class="sparkle" data-flame="#FF5A1F" style="left:-4%;top:48%;--s:28px;--d:-2s"></span>
+          <span class="sparkle" data-sparkle="#fff" style="left:60%;top:96%;--s:18px;--d:-.5s"></span>
+        </div>
+      </div>
+
+      <div class="scroll-cue" aria-hidden="true"><i></i>Scroll · πάμε σχάρα</div>
+    </section>
+
+    <!-- ============================ TICKERS -->
+    <div class="tickers">
+      <div class="ticker ticker--sun" role="note" aria-label="Delivery: 25–35 λεπτά · Δωρεάν πάνω από 12€ · Τηλ. 210 000 0000">
+        <div class="ticker-track" data-marquee aria-hidden="true"><span>
+          Delivery 25–35′ <svg data-spark></svg> Δωρεάν πάνω από 12€ <svg data-spark></svg> Κάλεσε 210 000 0000 <svg data-spark></svg> Ανοιχτά ως αργά <svg data-spark></svg> Πειραιάς <svg data-spark></svg>
+        </span></div>
+      </div>
+      <div class="ticker ticker--blue" aria-hidden="true">
+        <div class="ticker-track" data-marquee><span>
+          Καλαμάκι χοιρινό <svg data-spark></svg> Γύρος από τη σούβλα <svg data-spark></svg> Κεμπάπ πολίτικο <svg data-spark></svg> Πατάτες στο χέρι <svg data-spark></svg> Τζατζίκι της γιαγιάς <svg data-spark></svg> Λουκουμάδες <svg data-spark></svg>
+        </span></div>
+      </div>
+    </div>
+
+    <!-- ============================ MANIFESTO -->
+    <section class="manifesto" id="story" data-scene="Story">
+      <div class="mx-auto w-full max-w-[1500px]">
+        <span class="eyebrow">Το μανιφέστο // 01</span>
+        <p class="manifesto-text" data-words>
+          Ψήνουμε σε <span class="serif">αληθινό κάρβουνο</span>
+          <span class="inline-sticker" style="--c:#FFC23D;--r:-6deg" data-mini='{"kind":"skewer","meat":"pork"}'></span>,
+          τυλίγουμε <span class="serif">σφιχτά</span> <span class="inline-sticker" style="--c:#FF5A1F;--r:5deg" data-mini='{"kind":"pita","meat":"gyros"}'></span>,
+          φορτώνουμε πατάτες στο χέρι <span class="inline-sticker" style="--c:#F7EDD8;--r:-3deg" data-mini='{"kind":"fries"}'></span>
+          &amp; το φέρνουμε <span class="serif">καυτό</span> στο block σου.
+        </p>
+
+        <div class="stats">
+          <div class="stat" data-reveal style="--r:-2deg;--c:var(--sun)">
+            <span class="stat-ico"><i data-lucide="timer"></i></span>
+            <b><span data-count="12">12</span>h</b><span>Μαρινάδα</span><small>λεμόνι, ρίγανη &amp; ελαιόλαδο</small>
+          </div>
+          <div class="stat" data-reveal style="--r:1.5deg;--c:var(--ember);--rd:.08s">
+            <span class="stat-ico"><i data-lucide="flame"></i></span>
+            <b><span data-count="400">400</span>°</b><span>Κάρβουνο</span><small>πραγματικό κάρβουνο, όχι γκάζι</small>
+          </div>
+          <div class="stat" data-reveal style="--r:-1deg;--c:var(--green);--rd:.16s">
+            <span class="stat-ico"><i data-lucide="bike"></i></span>
+            <b>25–35′</b><span>Delivery</span><small>από τη σχάρα στην πόρτα</small>
+          </div>
+          <div class="stat" data-reveal style="--r:2deg;--c:var(--pink);--rd:.24s">
+            <span class="stat-ico"><i data-lucide="coins"></i></span>
+            <b><span data-count="12">12</span>€</b><span>Free delivery</span><small>δωρεάν delivery από 12€</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ ANATOMY OF A PITA -->
+    <section class="anatomy" id="pita" data-scene="Pita">
+      <div class="anatomy-sticky">
+        <div class="anatomy-bg-word" aria-hidden="true">ΠΙΤΑ</div>
+        <div class="anatomy-copy">
+          <span class="eyebrow">Specimen 001 // η κλασική</span>
+          <h2 class="section-title sticker-text">Ανατομία<br>μιας <span class="serif">πίτας</span></h2>
+          <p>Κάνε scroll για να ξετυλίξεις την κλασική πίτα μας — οκτώ στρώσεις, από το χαρτί ως την πάπρικα, τυλιγμένες τη στιγμή που παραγγέλνεις.</p>
+          <div class="anatomy-hud">
+            <div><span>Layers</span><b data-stack-n>0/8</b></div>
+            <div><span>Wrap height</span><b data-stack-h>0.0 cm</b></div>
+          </div>
+        </div>
+        <div class="stack" id="stack" aria-label="Πίτα Καλαμάκι Χοιρινό: πάπρικα & λεμόνι, τζατζίκι, καλαμάκι χοιρινό, ντομάτα, κρεμμύδι, πατάτες, πίτα, χαρτί" role="img"></div>
+        <div class="anatomy-card">
+          <span class="mono">No.1 · ★ Legend</span>
+          <h3>Πίτα Καλαμάκι Χοιρινό</h3>
+          <p>Χοιρινό στα κάρβουνα, ντομάτα, κρεμμύδι, πατάτες, τζατζίκι &amp; πάπρικα.</p>
+          <div class="row">
+            <span class="price" data-price-of="pita-pork">3,90€</span>
+            <button type="button" class="btn btn--ink btn--sm" data-customize="pita-pork" data-cursor="ΤΥΛΙΞΕ"><i data-lucide="flame"></i> Τύλιξέ τη</button>
+          </div>
+        </div>
+        <div class="anatomy-progress" aria-hidden="true"><i></i></div>
+      </div>
+    </section>
+
+    <!-- ============================ CATALOG -->
+    <section class="catalog" id="menu" data-scene="Menu">
+      <div class="mx-auto w-full max-w-[1500px]">
+        <div class="catalog-head">
+          <div>
+            <span class="eyebrow">Ο κατάλογος // 03</span>
+            <h2 class="section-title mt-4">Street<br><span class="serif">souvlaki</span> menu</h2>
+          </div>
+          <div>
+            <p>Κάθε κάρτα, ένα craving. Πάτα <b>Φτιάξ' το</b> για να διαλέξεις καυτερό, σάλτσες &amp; extra — ή το <b>+</b> για να πάει κατευθείαν στο ταψί.</p>
+            <div class="catalog-meta">
+              <span class="pill" data-menu-count>35 πιάτα</span>
+              <span class="pill">6 κατηγορίες</span>
+              <span class="pill" style="background:var(--sun)">★ Legends</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="filterbar" id="filterbar">
+          <div class="filters" id="filters" role="toolbar" aria-label="Φίλτρο κατηγοριών"></div>
+          <label class="search">
+            <i data-lucide="search"></i>
+            <span class="sr-only">Αναζήτηση στο μενού</span>
+            <input type="search" id="search" placeholder="Ψάξε: γύρος, κεμπάπ…" autocomplete="off" enterkeyhint="search">
+          </label>
+        </div>
+
+        <div class="grid" id="grid"></div>
+        <p class="sr-only" id="gridStatus" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <!-- ============================ BUILD YOUR OWN PROMO -->
+    <section class="engine-promo" id="build" data-scene="Build">
+      <div class="engine-grid mx-auto w-full max-w-[1500px]">
+        <div class="big-dial" aria-hidden="true"><svg id="bigDial" viewBox="0 0 400 400"></svg></div>
+        <div>
+          <span class="eyebrow">Grill control // build-your-own</span>
+          <h2 class="section-title mt-4">Φτιάξ' τη<br><span class="serif">δική σου</span></h2>
+          <p class="lead">Γύρνα το κουμπί του καυτερού, διάλεξε κρέας από τη σούβλα, πρόσθεσε σάλτσες και extra — ο ψήστης παίρνει την παραγγελία σου ακριβώς όπως τη θες.</p>
+          <div class="build-cards">
+            <button type="button" class="build-card" data-customize="byo-pita" style="--c:var(--paper)" data-cursor="ΤΥΛΙΞΕ">
+              <span class="go"><i data-lucide="arrow-up-right"></i></span>
+              <span data-art-of="byo-pita"></span>
+              <span class="txt"><b>Φτιάξε πίτα</b><small>Κρέας · γέμιση · σάλτσες · καυτερό</small></span>
+            </button>
+            <button type="button" class="build-card" data-customize="byo-merida" style="--c:var(--ember)" data-cursor="ΣΤΗΣΕ">
+              <span class="go"><i data-lucide="arrow-up-right"></i></span>
+              <span data-art-of="byo-merida"></span>
+              <span class="txt"><b>Φτιάξε μερίδα</b><small>Κρέας · συνοδευτικό · σάλτσες</small></span>
+            </button>
+            <button type="button" class="build-card" data-customize="byo-bowl" style="--c:var(--blue)" data-cursor="ΣΤΗΣΕ">
+              <span class="go"><i data-lucide="arrow-up-right"></i></span>
+              <span data-art-of="byo-bowl"></span>
+              <span class="txt"><b>Souvlaki bowl</b><small>Βάση · κρέας · toppings</small></span>
+            </button>
+          </div>
+          <ol class="steps">
+            <li><b>1</b>Διάλεξε κρέας</li>
+            <li><b>2</b>Φτιάξ' το</li>
+            <li><b>3</b>Στείλε στο WhatsApp</li>
+            <li><b>4</b>Καυτό σε 30′</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ FIND US -->
+    <section class="coords" id="find" data-scene="Find">
+      <div class="mx-auto w-full max-w-[1500px]">
+        <span class="eyebrow" style="color:var(--sun)">Βρες μας // 05</span>
+        <h2 class="section-title mt-4">Πειραιάς<br><span class="serif">στίγμα</span></h2>
+
+        <div class="coords-grid">
+          <div class="radar" role="img" aria-label="Χάρτης: Kalamaki Club, Καραΐσκου 58, Πειραιάς">
+            <svg class="map" id="radarMap" viewBox="0 0 400 400" aria-hidden="true"></svg>
+            <div class="radar-sweep" aria-hidden="true"></div>
+            <div class="radar-blip" aria-hidden="true"></div>
+            <div class="radar-label" aria-hidden="true" data-radar-label>Kalamaki Club<br>Καραΐσκου 58</div>
+            <div class="radar-coords" aria-hidden="true">37.94°N · 23.64°E · PIRAEUS</div>
+          </div>
+
+          <div class="info-grid">
+            <div class="hud hud--wide">
+              <h3><i data-lucide="map-pin"></i> Διεύθυνση</h3>
+              <p><span data-address>Καραΐσκου 58</span><small data-area>Πειραιάς</small></p>
+              <a class="btn btn--sm" data-maps target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;query=%CE%A0%CE%B5%CE%B9%CF%81%CE%B1%CE%B9%CE%AC%CF%82" data-cursor="ΧΑΡΤΗΣ"><i data-lucide="navigation"></i> Άνοιγμα στους Χάρτες</a>
+            </div>
+            <div class="hud">
+              <h3><i data-lucide="phone"></i> Τηλέφωνο</h3>
+              <p><a data-tel href="tel:+302100000000">210 000 0000</a><small>Κάλεσε για παραγγελία</small></p>
+            </div>
+            <div class="hud">
+              <h3><i data-lucide="at-sign"></i> Instagram</h3>
+              <p><a data-instagram href="https://www.instagram.com/kalamakiclub/" target="_blank" rel="noopener">@kalamakiclub</a><small>Specials, drops &amp; memes</small></p>
+            </div>
+            <div class="hud">
+              <h3><i data-lucide="clock"></i> Ωράριο</h3>
+              <table class="hours" id="hours"><tbody></tbody></table>
+            </div>
+            <div class="hud">
+              <h3><i data-lucide="bike"></i> Delivery</h3>
+              <p>25–35′<small>Ελάχιστη 5€ · Δωρεάν delivery από 12€</small></p>
+              <a class="efood-badge" data-efood href="https://www.e-food.gr/" target="_blank" rel="noopener" style="margin-top:14px" data-cursor="ORDER">
+                <i><i data-lucide="shopping-bag"></i></i>
+                <span>Και στο<b>e-food</b></span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <footer class="footer">
+          <div class="footer-marquee" aria-hidden="true">
+            <div class="ticker-track" data-marquee style="--speed:30s"><span>Καλή όρεξη <em>✦</em> Kalamaki Club <em>✦</em></span></div>
+          </div>
+          <div class="footer-main">
+            <div class="footer-logo" role="img" aria-label="Kalamaki Club logo"></div>
+            <p class="big">Φάε καλά,<br><span class="serif">έλα</span> ξανά.</p>
+            <nav class="footer-links" aria-label="Footer">
+              <a href="#menu"><i data-lucide="utensils"></i> Menu</a>
+              <a href="#build"><i data-lucide="sliders-horizontal"></i> Φτιάξ' το</a>
+              <a data-tel href="tel:+302100000000"><i data-lucide="phone"></i> <span data-phone>210 000 0000</span></a>
+              <a data-instagram href="https://www.instagram.com/kalamakiclub/" target="_blank" rel="noopener"><i data-lucide="at-sign"></i> Instagram</a>
+              <a data-efood href="https://www.e-food.gr/" target="_blank" rel="noopener"><i data-lucide="shopping-bag"></i> e-food</a>
+            </nav>
+          </div>
+          <div class="footer-bottom">
+            <span>© <span data-year>2026</span> Kalamaki Club · <span data-full-address>Καραΐσκου 58, Πειραιάς</span></span>
+            <a href="#fire" class="to-top">Πίσω στη σχάρα <i data-lucide="arrow-up"></i></a>
+          </div>
+        </footer>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================ MOBILE DOCK -->
+  <nav class="dock" aria-label="Γρήγορη πλοήγηση">
+    <a href="#fire"><i data-lucide="house"></i>Home</a>
+    <a href="#menu"><i data-lucide="utensils"></i>Menu</a>
+    <button type="button" class="dock-main" data-open-cart aria-label="Καλάθι">
+      <span class="fab"><i data-lucide="shopping-bag"></i></span>
+      <span class="dock-count" data-cart-count data-n="0">0</span>
+      Ταψί
+    </button>
+    <a href="#build"><i data-lucide="sliders-horizontal"></i>Build</a>
+    <a data-tel href="tel:+302100000000"><i data-lucide="phone"></i>Call</a>
+  </nav>
+
+  <!-- ============================ GRILL CONTROL MODAL -->
+  <div class="overlay-root modal-root" id="engineModal" aria-hidden="true">
+    <div class="backdrop" data-close></div>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" tabindex="-1">
+      <button type="button" class="btn-icon modal-close" data-close aria-label="Κλείσιμο"><i data-lucide="x"></i></button>
+      <div class="modal-art">
+        <div class="hudline"><span id="mNo">No. 001</span><span id="mCat"></span></div>
+        <div class="modal-stage" id="mStage"><div class="orbit-deco"></div><div class="orbit-deco two"></div></div>
+        <div>
+          <h2 id="mTitle">—</h2>
+          <p id="mDesc"></p>
+          <ul class="tags" id="mTags"></ul>
+        </div>
+      </div>
+      <div class="modal-controls">
+        <div class="modal-head">
+          <div><span class="mono">Grill control v1.0</span><span class="display">Φτιάξ' το όπως το θες</span></div>
+        </div>
+        <form class="modal-scroll" id="mForm" data-lenis-prevent novalidate></form>
+        <div class="modal-foot">
+          <div class="stepper" role="group" aria-label="Ποσότητα">
+            <button type="button" id="mMinus" aria-label="Λιγότερα"><i data-lucide="minus"></i></button>
+            <output id="mQty" aria-live="polite">1</output>
+            <button type="button" id="mPlus" aria-label="Περισσότερα"><i data-lucide="plus"></i></button>
+          </div>
+          <button type="button" class="btn btn--blue btn--lg" id="mAdd" data-cursor="ΣΤΟ ΤΑΨΙ"><i data-lucide="flame"></i> <span id="mAddLabel">Στο ταψί</span> · <b id="mTotal">0,00€</b></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================ THE TRAY (CART DRAWER) -->
+  <div class="overlay-root drawer-root" id="cartDrawer" aria-hidden="true">
+    <div class="backdrop" data-close></div>
+    <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle" tabindex="-1">
+      <div class="drawer-head">
+        <h2 id="dTitle">Το ταψί σου <span class="cart-count" data-cart-count>0</span></h2>
+        <button type="button" class="btn-icon" data-close aria-label="Κλείσιμο καλαθιού"><i data-lucide="x"></i></button>
+      </div>
+      <div class="drawer-steps" aria-hidden="true">
+        <span data-step="cart">01 · Ταψί</span>
+        <span data-step="details">02 · Στοιχεία</span>
+        <span data-step="done">03 · Αποστολή</span>
+      </div>
+      <div class="drawer-body" id="dBody" data-lenis-prevent></div>
+      <div class="drawer-foot" id="dFoot"></div>
+    </aside>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- ============================ SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+  <script src="assets/js/menu-data.js?v=1"></script>
+  <script src="assets/js/art.js?v=1"></script>
+  <script src="assets/js/app.js?v=1"></script>
+</body>
+</html>
