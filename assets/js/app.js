@@ -357,7 +357,7 @@
     const cat = catOf(p.cat);
     const rarity = p.rarity || 'common';
     const lvl = clamp(p.intensity || 3, 1, 5);
-    return `<article class="card card--${rarity}" data-id="${p.id}" data-cat="${p.cat}" style="--c:${p.bg};--bd:-${(p.no * 1.37) % 5}s">
+    return `<article class="card card--${rarity}" data-id="${p.id}" data-cat="${p.cat}" style="--c:${p.bg}">
       <div class="card-top"><span>No.${pad(p.no)}</span><span class="cat">${cat.emoji} ${esc(cat.label)}</span><span class="rarity rarity--${rarity}">${RARITY[rarity]}</span></div>
       <button class="card-art" type="button" data-customize="${p.id}" aria-label="Επιλογές για ${esc(p.name)}" data-cursor="ΦΤΙΑΞ' ΤΟ">
         ${Art.render(p.art)}
@@ -431,27 +431,36 @@
     searchT = setTimeout(() => { Catalog.q = e.target.value; applyFilter(false); }, 120);
   });
 
-  /* card tilt + glare */
+  /* card tilt + glare. The card's rect is measured once per hover (not on every move), writes are
+     batched to one per frame, and they go on the card's own transform and its glare only: inherited
+     custom properties on the card used to restyle the whole illustration on every mouse move. */
   if (finePointer && !reduced) {
     const grid = $('#grid');
+    let cur = null, rect = null, glare = null, px = 0.5, py = 0.5, raf = 0;
+    const paint = () => {
+      raf = 0;
+      if (!cur) return;
+      cur.style.transform = `perspective(1000px) rotateX(${(-(py - 0.5) * 10).toFixed(2)}deg) rotateY(${((px - 0.5) * 12).toFixed(2)}deg)`;
+      glare.style.setProperty('--gx', (px * 100).toFixed(1) + '%');
+      glare.style.setProperty('--gy', (py * 100).toFixed(1) + '%');
+    };
     grid.addEventListener('pointermove', (e) => {
       const card = e.target.closest('.card');
       if (!card) return;
-      const r = card.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
-      card.classList.add('is-tilting');
-      card.style.setProperty('--ry', ((px - 0.5) * 12).toFixed(2) + 'deg');
-      card.style.setProperty('--rx', (-(py - 0.5) * 10).toFixed(2) + 'deg');
-      card.style.setProperty('--gx', (px * 100).toFixed(1) + '%');
-      card.style.setProperty('--gy', (py * 100).toFixed(1) + '%');
+      if (card !== cur) { cur = card; rect = null; glare = card.querySelector('.card-glare'); card.classList.add('is-tilting'); }
+      if (!rect) rect = card.getBoundingClientRect();
+      px = clamp((e.clientX - rect.left) / rect.width, 0, 1);
+      py = clamp((e.clientY - rect.top) / rect.height, 0, 1);
+      if (!raf) raf = requestAnimationFrame(paint);
     });
     grid.addEventListener('pointerout', (e) => {
       const card = e.target.closest('.card');
       if (!card || card.contains(e.relatedTarget)) return;
       card.classList.remove('is-tilting');
-      card.style.setProperty('--rx', '0deg');
-      card.style.setProperty('--ry', '0deg');
+      card.style.transform = '';
+      if (card === cur) cur = null;
     });
+    window.addEventListener('scroll', () => { rect = null; }, { passive: true });
   }
 
   /* ------------------------------------------------------------------ grill control (customizer modal) */
@@ -1207,10 +1216,25 @@
       x: Math.random() * w, y: anywhere ? Math.random() * h : h + 8,
       vy: 0.35 + Math.random() * 1.2, vx: (Math.random() - 0.5) * 0.3,
       r: 0.7 + Math.random() * 2.3, t: Math.random() * 6.28,
-      c: colors[Math.floor(Math.random() * colors.length)],
+      ci: Math.floor(Math.random() * colors.length),
+    });
+    // one pre-rendered glow per colour: drawImage is much cheaper than filling two arcs per spark
+    const SPRITE = 32;
+    const sprites = colors.map((c) => {
+      const s = document.createElement('canvas');
+      s.width = s.height = SPRITE;
+      const sx = s.getContext('2d');
+      const g = sx.createRadialGradient(SPRITE / 2, SPRITE / 2, 0, SPRITE / 2, SPRITE / 2, SPRITE / 2);
+      g.addColorStop(0, c);
+      g.addColorStop(0.28, c);
+      g.addColorStop(0.3, c + '55');
+      g.addColorStop(1, c + '00');
+      sx.fillStyle = g;
+      sx.fillRect(0, 0, SPRITE, SPRITE);
+      return s;
     });
     const resize = () => {
-      dpr = Math.min(2, window.devicePixelRatio || 1);
+      dpr = Math.min(1.5, window.devicePixelRatio || 1);
       w = cv.clientWidth; h = cv.clientHeight;
       cv.width = w * dpr; cv.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1219,7 +1243,7 @@
     resize();
     window.addEventListener('resize', resize);
     $('.hero').addEventListener('pointermove', (e) => { mx = e.clientX / w - 0.5; });
-    new IntersectionObserver(([en]) => { visible = en.isIntersecting; }).observe(cv);
+    let running = false;
     const draw = (time) => {
       if (visible) {
         ctx.clearRect(0, 0, w, h);
@@ -1233,17 +1257,20 @@
           }
           const fade = Math.min(1, Math.max(0, p.y / h) * 1.6);
           const flick = reduced ? 1 : 0.55 + 0.45 * Math.sin(time * 0.008 * (1 + p.r) + p.t);
-          ctx.fillStyle = p.c;
-          ctx.globalAlpha = 0.14 * fade * flick;
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 3.2, 0, 6.283); ctx.fill();
+          const d = p.r * 6.4;
           ctx.globalAlpha = fade * flick;
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+          ctx.drawImage(sprites[p.ci], p.x - d / 2, p.y - d / 2, d, d);
         }
         ctx.globalAlpha = 1;
       }
-      if (!reduced) requestAnimationFrame(draw);
+      running = !reduced && visible;
+      if (running) requestAnimationFrame(draw);
     };
-    requestAnimationFrame(draw);
+    // the loop sleeps while the hero is off screen instead of ticking every frame for nothing
+    new IntersectionObserver(([en]) => {
+      visible = en.isIntersecting;
+      if (visible && !running) { running = true; requestAnimationFrame(draw); }
+    }).observe(cv);
   }
 
   function heroParallax() {
@@ -1251,8 +1278,8 @@
     const hero = $('.hero');
     const items = $$('#heroVisual [data-depth]').map((el) => ({
       el, d: Number(el.dataset.depth),
-      qx: hasGSAP ? gsap.quickTo(el, 'x', { duration: 0.9, ease: 'power3.out' }) : null,
-      qy: hasGSAP ? gsap.quickTo(el, 'y', { duration: 0.9, ease: 'power3.out' }) : null,
+      qx: hasGSAP ? gsap.quickTo(el, 'x', { duration: 0.6, ease: 'power3.out' }) : null,
+      qy: hasGSAP ? gsap.quickTo(el, 'y', { duration: 0.6, ease: 'power3.out' }) : null,
     }));
     hero.addEventListener('pointermove', (e) => {
       const nx = e.clientX / window.innerWidth - 0.5, ny = e.clientY / window.innerHeight - 0.5;
@@ -1269,20 +1296,23 @@
     root.classList.add('has-cursor');
     const dot = $('#cursorDot'), ring = $('#cursorRing'), label = $('#cursorLabel');
     const cv = $('#trail'), ctx = cv.getContext('2d');
-    let x = -100, y = -100, rx = x, ry = y, lx = x, ly = y, dpr = 1;
+    let x = -100, y = -100, rx = x, ry = y, lx = x, ly = y, dpr = 1, raf = 0, last = 0, trailDrawn = false;
     const parts = [];
     const size = () => { dpr = Math.min(2, devicePixelRatio || 1); cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
     size(); addEventListener('resize', size);
     const colors = ['#FFC23D', '#2457FF', '#FF5A1F', '#5FC46B', '#FF8FA3'];
+    // Moves only record the position; one rAF loop writes the styles once per frame and goes to
+    // sleep when the ring has caught up and the trail has faded, so nothing ticks while the mouse rests.
+    const wake = () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); } };
     addEventListener('pointermove', (e) => {
       if (e.pointerType !== 'mouse') return;
       x = e.clientX; y = e.clientY;
-      dot.style.transform = `translate(${x}px, ${y}px)`;
       const dist = Math.hypot(x - lx, y - ly);
       if (dist > 14 && parts.length < 80) {
         parts.push({ x, y, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2 + 0.4, life: 1, s: 3 + Math.random() * 4, c: colors[parts.length % colors.length], r: Math.random() * 6 });
         lx = x; ly = y;
       }
+      wake();
     }, { passive: true });
     document.addEventListener('pointerleave', () => { ring.style.opacity = 0; dot.style.opacity = 0; });
     document.addEventListener('pointerenter', () => { ring.style.opacity = 1; dot.style.opacity = 1; });
@@ -1302,23 +1332,34 @@
       ctx.beginPath(); ctx.moveTo(0, -r * 2); ctx.quadraticCurveTo(0, 0, r * 2, 0); ctx.quadraticCurveTo(0, 0, 0, r * 2); ctx.quadraticCurveTo(0, 0, -r * 2, 0); ctx.quadraticCurveTo(0, 0, 0, -r * 2); ctx.fill();
       ctx.restore();
     };
-    const loop = () => {
-      rx += (x - rx) * 0.2; ry += (y - ry) * 0.2;
-      ring.style.transform = `translate(${rx}px, ${ry}px)`;
-      label.style.transform = `translate(${rx}px, ${ry}px)`;
-      ctx.clearRect(0, 0, innerWidth, innerHeight);
-      for (let i = parts.length - 1; i >= 0; i--) {
-        const p = parts[i];
-        p.x += p.vx; p.y += p.vy; p.life -= 0.022; p.r += 0.05;
-        if (p.life <= 0) parts.splice(i, 1); else star(p);
+    function loop(t) {
+      const dt = Math.min(64, t - last); last = t;
+      // The ring eases after the dot with a ~40 ms time constant measured in real time. The old
+      // 0.2-per-frame lerp trailed ~75 ms at 60 Hz, and lagged further whenever a frame dropped.
+      const k = 1 - Math.exp(-dt / 40);
+      rx += (x - rx) * k; ry += (y - ry) * k;
+      const settled = Math.abs(x - rx) < 0.15 && Math.abs(y - ry) < 0.15;
+      if (settled) { rx = x; ry = y; }
+      dot.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      ring.style.transform = label.style.transform = `translate3d(${rx.toFixed(1)}px, ${ry.toFixed(1)}px, 0)`;
+      if (parts.length || trailDrawn) {
+        ctx.clearRect(0, 0, innerWidth, innerHeight);
+        const f = dt / (1000 / 60);
+        for (let i = parts.length - 1; i >= 0; i--) {
+          const p = parts[i];
+          p.x += p.vx * f; p.y += p.vy * f; p.life -= 0.022 * f; p.r += 0.05 * f;
+          if (p.life <= 0) parts.splice(i, 1); else star(p);
+        }
+        trailDrawn = parts.length > 0;
       }
-      requestAnimationFrame(loop);
-    };
-    loop();
+      raf = settled && !parts.length ? 0 : requestAnimationFrame(loop);
+    }
 
     $$('[data-magnetic]').forEach((el) => {
+      let r = null;
+      el.addEventListener('pointerenter', () => { r = el.getBoundingClientRect(); });
       el.addEventListener('pointermove', (e) => {
-        const r = el.getBoundingClientRect();
+        r = r || el.getBoundingClientRect();
         el.style.setProperty('--mx', ((e.clientX - (r.left + r.width / 2)) * 0.22).toFixed(1) + 'px');
         el.style.setProperty('--my', ((e.clientY - (r.top + r.height / 2)) * 0.32).toFixed(1) + 'px');
       });
@@ -1333,7 +1374,14 @@
     const list = $('#railList');
     list.innerHTML = scenes.map((s) => `<li><a href="#${s.id}" data-alt="${s.id}">${s.dataset.scene}</a></li>`).join('');
     const marker = $('#railMarker');
-    let lastY = window.scrollY;
+    const railLinks = $$('[data-alt]'), navLinks = $$('.nav-links a');
+    // Section tops are measured on load/refresh, not read from layout on every scroll frame.
+    let tops = [];
+    const measure = () => { tops = scenes.map((s) => s.getBoundingClientRect().top + window.scrollY); };
+    measure();
+    if (hasGSAP) ScrollTrigger.addEventListener('refresh', measure);
+    window.addEventListener('resize', measure);
+    let lastY = window.scrollY, lastActive = null;
     const onScroll = () => {
       const y = window.scrollY;
       const down = y > lastY;
@@ -1343,12 +1391,14 @@
         document.body.classList.toggle('nav-hidden', hide);
         lastY = y;
       }
-      const mid = window.innerHeight * 0.45;
+      const mid = y + window.innerHeight * 0.45;
       let active = scenes[0];
-      scenes.forEach((s) => { if (s.getBoundingClientRect().top <= mid) active = s; });
-      $$('[data-alt]').forEach((a) => a.classList.toggle('is-active', a.dataset.alt === active.id));
-      $$('.nav-links a').forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === '#' + active.id));
-      const act = $(`[data-alt="${active.id}"]`);
+      tops.forEach((top, i) => { if (top <= mid) active = scenes[i]; });
+      if (active === lastActive) return;
+      lastActive = active;
+      railLinks.forEach((a) => a.classList.toggle('is-active', a.dataset.alt === active.id));
+      navLinks.forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === '#' + active.id));
+      const act = railLinks.find((a) => a.dataset.alt === active.id);
       if (act && marker) marker.style.transform = `translateY(${act.parentElement.offsetTop + act.offsetHeight / 2 - 9}px)`;
     };
     if (lenis) lenis.on('scroll', onScroll); else window.addEventListener('scroll', onScroll, { passive: true });
@@ -1508,6 +1558,37 @@
     $$('[data-reveal]').forEach((el) => io.observe(el));
   }
 
+  /* ------------------------------------------------------------------ off-screen decoration */
+  // Marquees, the spinning badge, the radar sweep and the grill floor keep painting (and keep their
+  // compositing layers churning) while they are scrolled out of view. Pause them until they matter.
+  function pauseOffscreen() {
+    if (!('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(
+      (ents) => ents.forEach((en) => en.target.classList.toggle('is-idle', !en.isIntersecting)),
+      { rootMargin: '15% 0px' },
+    );
+    $$('.tickers, .hero-visual, .grid-floor, .scroll-cue, .radar, .footer-marquee, .engine-promo, .stats').forEach((el) => io.observe(el));
+  }
+
+  /* ------------------------------------------------------------------ blinks */
+  // Every 1.2 s one or two faces that are on screen blink once. This replaced a looping CSS blink on
+  // every illustration, which kept ~45 SVGs restyling, re-laying-out and repainting on every frame.
+  function blinks() {
+    if (reduced || !('IntersectionObserver' in window)) return;
+    const seen = new WeakSet(), live = new Set();
+    const io = new IntersectionObserver((ents) => ents.forEach((en) => (en.isIntersecting ? live.add(en.target) : live.delete(en.target))));
+    setInterval(() => {
+      if (document.hidden) return;
+      $$('.eyes').forEach((g) => { const svg = g.ownerSVGElement; if (svg && !seen.has(svg)) { seen.add(svg); io.observe(svg); } });
+      const pool = [...live].filter((s) => s.isConnected);
+      for (let i = 0; i < 2 && pool.length; i++) {
+        const svg = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+        const eyes = svg.querySelectorAll('.eyes');
+        eyes.forEach((g) => { g.classList.add('blink'); setTimeout(() => g.classList.remove('blink'), 320); });
+      }
+    }, 1200);
+  }
+
   /* ------------------------------------------------------------------ preloader */
   function preloader(done) {
     const el = $('#preloader');
@@ -1542,7 +1623,7 @@
   /* ------------------------------------------------------------------ boot */
   function initLenis() {
     if (!window.Lenis || reduced) return;
-    lenis = new window.Lenis({ lerp: 0.11, smoothWheel: true, wheelMultiplier: 1 });
+    lenis = new window.Lenis({ lerp: 0.14, smoothWheel: true, wheelMultiplier: 1 });
     if (hasGSAP) {
       lenis.on('scroll', ScrollTrigger.update);
       gsap.ticker.add((t) => lenis.raf(t * 1000));
@@ -1579,6 +1660,8 @@
   embers();
   heroParallax();
   cursor();
+  blinks();
+  pauseOffscreen();
   scenes();
   buildPita();
   counters();
